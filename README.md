@@ -64,6 +64,9 @@ npx serve
 ├── game.js             # 遊戲邏輯 (核心類別 Game2048)
 ├── style.css           # 遊戲樣式 (淺色/深色主題、動畫)
 ├── images/             # 截圖與素材
+├── tests/              # 單元測試（零依賴 Node runner）
+│   ├── run.cjs         # 測試案例與執行入口
+│   └── stub.cjs        # DOM/localStorage/計時器環境樁
 ├── wrangler.jsonc      # Cloudflare Workers 部署設定
 ├── setup_git_sync.ps1  # Git 多遠端同步腳本
 └── README.md           # 說明文件
@@ -92,6 +95,18 @@ npx serve
 - [x] 添加 theme 切換 (深色/淺色模式)
 
 ### 🧪 測試項目
+
+自動化單元測試（零依賴，不需安裝套件）：
+
+```bash
+node tests/run.cjs
+```
+
+覆蓋範圍：四向移動與合併、單次合併規則、無效移動、移動後補 tile、
+悔棋還原（單步/連續/上限 10 筆）、遊戲結束判定、2048 獲勝、
+AI 移動評估、bestScore 持久化、主題切換。
+
+手動測試：
 
 - [x] 鍵盤操作測試 (上下左右)
 - [x] 觸控滑動測試
