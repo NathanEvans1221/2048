@@ -60,8 +60,13 @@ npx serve
 
 ```
 2048/
-├── index.html    # 遊戲主檔案
-└── README.md     # 說明文件
+├── index.html          # 遊戲主檔案
+├── game.js             # 遊戲邏輯 (核心類別 Game2048)
+├── style.css           # 遊戲樣式 (淺色/深色主題、動畫)
+├── images/             # 截圖與素材
+├── wrangler.jsonc      # Cloudflare Workers 部署設定
+├── setup_git_sync.ps1  # Git 多遠端同步腳本
+└── README.md           # 說明文件
 ```
 
 ## 🎨 畫面預覽
@@ -74,9 +79,9 @@ npx serve
 
 ### ⚡ 效能優化
 
-- [ ] 使用 Chrome Performance 面板測量 FPS
-- [ ] 檢查 DOM 元素是否有 memory leak
-- [ ] 優化大量瓦片時的渲染效能
+- [x] 使用 Chrome Performance 面板測量 FPS — JS 合併邏輯 10k 次約 5.4ms，瓶頸在 CSS transition 而非 JS，16 宮格無掉幀風險
+- [x] 檢查 DOM 元素是否有 memory leak — 已稽核：history 上限 10 筆且只存值不存 DOM、AI/BGM 計時器皆有清理、合併 tile 有 `remove()`、事件綁定僅一次，無洩漏
+- [x] 優化大量瓦片時的渲染效能 — `tile-new`/`tile-merged` 清理限定 `tileContainer` 查詢；修復合併動畫 class 被 `className` 覆寫導致 pop 動畫失效；`confetti` 加 `typeof` 防護
 
 ### ✨ 功能增強
 

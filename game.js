@@ -789,9 +789,10 @@ class Game2048 {
                     // 套用位移動畫
                     newCell.element.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
                     
-                    // 更新數字對應的 CSS 樣式
+                    // 更新數字對應的 CSS 樣式（保留合併動畫 class，避免被覆寫掉）
                     const tileClass = newCell.value > 2048 ? 'super' : newCell.value;
-                    newCell.element.className = `tile tile-${tileClass}`;
+                    const merged = newCell.element.classList.contains('tile-merged') ? ' tile-merged' : '';
+                    newCell.element.className = `tile tile-${tileClass}${merged}`;
                 }
             }
         }
@@ -814,13 +815,17 @@ class Game2048 {
             
             // 延遲執行：等待位移動畫結束後再加入新方塊
             setTimeout(() => {
-                // 清理標記標籤
-                document.querySelectorAll('.tile-new').forEach(tile => {
+                // 清理標記標籤（限定 tile 容器，避免全文件掃描）
+                this.tileContainer.querySelectorAll('.tile-new').forEach(tile => {
                     tile.classList.remove('tile-new');
                 });
+                // 清掉上次合併動畫標記，確保下次合併時 pop 動畫能重新觸發
+                this.tileContainer.querySelectorAll('.tile-merged').forEach(tile => {
+                    tile.classList.remove('tile-merged');
+                });
                 
-                // 合併特效 (彩帶)
-                if (mergedPositions.length > 0) {
+                // 合併特效 (彩帶)：CDN 載入失敗時不拋錯
+                if (mergedPositions.length > 0 && typeof confetti === 'function') {
                     confetti({
                         particleCount: 30,
                         spread: 50,
