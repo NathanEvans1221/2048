@@ -590,14 +590,15 @@ class Game2048 {
     }
 
     /**
-     * 儲存當前狀態以便之後悔棋回溯
+     * 儲存指定狀態以便之後悔棋回溯
+     * @param {Object} [state] 快照；省略時快照當前狀態
      */
-    saveHistory() {
-        const state = {
+    saveHistory(state) {
+        const snapshot = state || {
             grid: this.grid.map(row => row.map(cell => cell ? { value: cell.value, id: cell.id } : null)),
             score: this.score
         };
-        this.history.push(state);
+        this.history.push(snapshot);
         // 為了效能與內存，僅保留最近 10 次紀錄
         if (this.history.length > 10) this.history.shift();
         this.updateUndoButton();
@@ -710,6 +711,13 @@ class Game2048 {
         let moved = false;
         const mergedPositions = [];
 
+        // 悔棋快照必須在變更前保存（processLine 會直接改動 grid cell），
+        // 否則存到的是移動後狀態，undo 將無法還原上一步
+        const prevState = {
+            grid: this.grid.map(row => row.map(cell => cell ? { value: cell.value, id: cell.id } : null)),
+            score: this.score
+        };
+
         /**
          * 處理單行(或單欄)的合併邏輯
          */
@@ -799,7 +807,7 @@ class Game2048 {
 
         // 如果遊戲狀態有改變
         if (moved) {
-            this.saveHistory();
+            this.saveHistory(prevState);
             
             // 處理連擊判定
             if (mergedPositions.length > 1) {
