@@ -251,6 +251,108 @@ test('主題切換寫入 localStorage 並更新 data-theme', () => {
     eq(document.documentElement.getAttribute('data-theme'), g.theme, 'data-theme');
 });
 
+// ---------- AI 自動玩 ----------
+test('AI 開啟後自動走步，關閉後停止', () => {
+    const g = freshGame();
+    setGrid(g, [[2, null, null, null], [2, null, null, null], ...EMPTY.slice(2)]);
+    g.toggleAI();
+    eq(g.aiPlaying, true, 'AI 開啟');
+    eq(g.history.length >= 1, true, 'AI 已走第一步');
+    stub.runTimers(); // 补 tile＋AI 走第二步
+    eq(g.history.length >= 2, true, 'AI 持續走步');
+    g.toggleAI();
+    eq(g.aiPlaying, false, 'AI 關閉');
+    stub.runTimers(); // 排空殘留回呼
+    const snapshot = JSON.stringify(gridValues(g));
+    stub.runTimers(); // 佇列應為空，不再有動作
+    eq(JSON.stringify(gridValues(g)), snapshot, '關閉後盤面不再變動');
+});
+
+// ---------- 連擊 ----------
+test('一次合併兩組觸發 combo，無合併則歸零', () => {
+    const g = freshGame();
+    setGrid(g, [[2, 2, 4, 4], ...EMPTY.slice(1)]);
+    g.move('left');
+    eqGrid(g, [[4, 8, null, null], ...EMPTY.slice(1)], '盤面');
+    eq(g.comboCount, 2, 'comboCount 累加');
+    eq(ctx.els['combo-display'].textContent, '2 COMBO!', 'combo 顯示文字');
+    stub.runTimers(); // 先補上新 tile，盤面變為 [4,8,2]
+    g.move('right'); // 有效移動但無合併
+    eq(g.comboCount, 0, '無合併歸零');
+});
+
+// ---------- 隨機 tile ----------
+test('滿盤時 addRandomTile 回傳 false', () => {
+    const g = freshGame();
+    g.clearTiles();
+    g.grid = Array(4).fill().map(() => Array(4).fill(null));
+    for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+            g.grid[r][c] = { value: 2, id: r * 4 + c, element: stub.makeEl() };
+        }
+    }
+    eq(g.addRandomTile(), false, '回傳 false');
+    eq(g.grid.flat().filter((cell) => cell !== null).length, 16, '數量不變');
+});
+
+test('addRandomTile 可長出 4（機率分支）', () => {
+    const g = freshGame();
+    setGrid(g, EMPTY.map((r) => [...r]));
+    stub.setRandom([0, 0.95]); // 第一個空格、值走 4 的分支
+    eq(g.addRandomTile(), true, '回傳 true');
+    eq(g.grid[0][0].value, 4, '長出 4');
+});
+
+// ---------- 初始化與流程 ----------
+test('init 初始兩張 tile、分數歸零', () => {
+    const g = freshGame(); // 建構式已跑過 init（樁的 Math.random 預設回 0，具決定性）
+    eq(g.grid.flat().filter((c) => c !== null).length, 2, '兩張 tile');
+    eq(g.score, 0, '分數為 0');
+    eq(g.history.length, 0, '歷史為空');
+});
+
+test('獲勝後繼續遊戲關閉遮罩', () => {
+    const g = freshGame();
+    setGrid(g, [[1024, 1024, null, null], ...EMPTY.slice(1)]);
+    g.move('left');
+    eq(g.won, true, '已獲勝');
+    g.continueGame();
+    eq(g.continued, true, 'continued 旗標');
+    eq(ctx.els['win-display'].classList.contains('active'), false, '遮罩關閉');
+});
+
+test('最後一格補滿且無路可走時顯示遊戲結束', () => {
+    const g = freshGame();
+    setGrid(g, [
+        [2, 4, 8, 16],
+        [32, 64, 128, 256],
+        [512, 1024, 2, 8],
+        [8, 16, 32, null],
+    ]);
+    g.move('down'); // col3 下滑，(0,3) 空出
+    stub.setRandom([0, 0]); // 唯一空格補 2
+    stub.runTimers();
+    eq(g.grid.flat().filter((c) => c !== null).length, 16, '盤面已滿');
+    eq(g.isGameOver(), true, '無路可走');
+    eq(ctx.els['game-over'].classList.contains('active'), true, '結束遮罩顯示');
+});
+
+test('音效開關切換並持久化', () => {
+    const g = freshGame();
+    const warn = console.warn;
+    console.warn = () => {}; // 壓住 AudioContext 不支援的預期警告（樁環境無 Web Audio）
+    try {
+        eq(g.soundEnabled, true, '預設開啟');
+        g.toggleSound();
+        eq(g.soundEnabled, false, '已關閉');
+        eq(ctx.store['soundEnabled'], 'false', 'localStorage 持久化');
+        g.toggleSound();
+        eq(g.soundEnabled, true, '再切回開啟');
+    } finally {
+        console.warn = warn;
+    }
+});
+
 // ---------- 總結 ----------
 console.log(`\n共 ${passCount + failCount} 項：通過 ${passCount}，失敗 ${failCount}`);
 if (failCount > 0) {

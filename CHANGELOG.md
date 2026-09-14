@@ -7,7 +7,7 @@
 
 ### 新增
 
-- 單元測試正式化：`tests/`（零依賴 Node runner，`node tests/run.cjs`），19 項案例覆蓋移動合併、悔棋、結束判定、獲勝、AI 評估、分數與主題。
+- 單元測試正式化：`tests/`（零依賴 Node runner，`node tests/run.cjs`），27 項案例覆蓋移動合併、悔棋、結束判定、獲勝與繼續、AI 自動玩啟停、combo、addRandomTile、init、分數與主題音效。
 
 ### 修正
 
